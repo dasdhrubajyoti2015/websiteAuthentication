@@ -1,14 +1,15 @@
 //jshint esversion:6
-//Level 3 encryption
+//Level 4 encryption
 require('dotenv').config();
 const express=require("express");
 const bodyParser=require("body-parser");
 var ejs=require("ejs");
 const mongoose=require("mongoose");
 //const encrypt = require('mongoose-encryption');
-var md5 = require('md5');
+//var md5 = require('md5');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
-console.log(md5('message'));
 
 
 const app=express();
@@ -50,11 +51,14 @@ app.get("/register",function(req,res){
 });
 
 app.post("/register",function(req,res){
+  bcrypt.hash(req.body.password, saltRounds, function(err, hash) {
+      // Store hash in your password DB.
+      const newUser=new user({
+                              email   :req.body.username,
+                              password:hash
+                         });
 
-  const newUser=new user({
-                          email   :req.body.username,
-                          password:md5(req.body.password)
-                     });
+
 
                      newUser.save(function(err){
                        if(err)
@@ -66,6 +70,7 @@ app.post("/register",function(req,res){
                          res.send("<h1>Congrats!You have successfully registered.</h1>");
                        }
                      });
+                      });
 
 
 });
@@ -74,14 +79,21 @@ app.post("/login",function(req,res){
 
 // calling findOne decrypts the password field
                           user.findOne({email:req.body.username},function(err,userinfo){
-                            if(userinfo.password===md5(req.body.password))
-                            {
+
+                            if(!err){
+
+                              bcrypt.compare(req.body.password,userinfo.password, function(err, result) {
+                             if (result == true)
+                             {
+
                               res.render("secrets");
                             }
                             else
                             {
-                              res.send("<h1>Wrong Passwword.</h1>");
+                              res.send("<h1>Wrong Password.</h1>");
                             }
+                          });
+                          }
                           });
 
 
